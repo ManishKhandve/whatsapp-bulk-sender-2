@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleanly Message — WhatsApp Bulk Sender</title>
+  <meta name="description" content="Send custom WhatsApp messages to contacts from Excel sheets with smart batching" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- ─── Header ──────────────────────────────────────────────────────── -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#logo-grad)" />
+          <path d="M22 10L14 22L10 17" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32">
+              <stop stop-color="#6366f1" />
+              <stop offset="1" stop-color="#06b6d4" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <h1>Cleanly Message</h1>
+        <p class="subtitle">WhatsApp Marketing Automation</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="status-badge" class="status-badge disconnected">
+        <span class="status-dot"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+      <button id="btn-logout" class="btn btn-ghost btn-sm" title="Logout WhatsApp" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Main Content ────────────────────────────────────────────────── -->
+  <main id="app-main">
+    <!-- QR Code Panel (shown when not authenticated) -->
+    <section id="qr-section" class="card qr-card">
+      <div class="card-header">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <h2>Connect WhatsApp</h2>
+      </div>
+      <p class="card-desc">Open WhatsApp on your phone → Settings → Linked Devices → Link a Device → Scan the QR code below</p>
+      <div id="qr-container" class="qr-container">
+        <div class="qr-placeholder">
+          <div class="spinner"></div>
+          <p>Generating QR code...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard (shown when authenticated) -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+      <!-- ─── Top Row: Upload + Message Composer ──────────────────── -->
+      <div class="dashboard-top">
+        <!-- Upload Panel -->
+        <section class="card upload-card">
+          <div class="card-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+            <h2>Upload Contacts</h2>
+          </div>
+          <div id="drop-zone" class="drop-zone">
+            <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p><strong>Drop Excel file here</strong> or click to browse</p>
+            <span class="drop-hint">.xlsx, .xls, .csv supported</span>
+          </div>
+          <div id="file-info" class="file-info" style="display:none;">
+            <div class="file-info-inner">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span id="file-name"></span>
+            </div>
+            <span id="contacts-count" class="badge"></span>
+          </div>
+        </section>
+
+        <!-- Message Composer -->
+        <section class="card composer-card">
+          <div class="card-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <h2>Message Template</h2>
+          </div>
+          <div class="variable-btns">
+            <button class="btn btn-tag" data-var="{{name}}">{{name}}</button>
+            <button class="btn btn-tag" data-var="{{phone}}">{{phone}}</button>
+            <button class="btn btn-tag" data-var="{{company}}">{{company}}</button>
+          </div>
+          <textarea id="message-input" class="message-textarea" rows="6" placeholder="Type your message here...&#10;&#10;Example: Hi {{name}}! 👋 We have an exclusive offer for you..."></textarea>
+          <div class="char-count"><span id="char-count">0</span> characters</div>
+
+          <div style="margin-top: 14px;">
+            <label for="image-input" style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 6px;">Attach an Image (Optional, max 1)</label>
+            <input type="file" id="image-input" accept="image/png, image/jpeg, image/jpg, image/webp" class="input-sm" style="padding: 6px; cursor: pointer; color: var(--text-muted);" />
+            <div id="image-info" class="file-info" style="display:none; margin-top: 8px; padding: 8px 12px;">
+              <div class="file-info-inner">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="image-name"></span>
+              </div>
+              <button id="btn-remove-image" class="btn btn-ghost btn-sm" style="padding: 2px 6px; border: none; color: var(--red);">✕</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ─── Settings Row ────────────────────────────────────────── -->
+      <section class="card settings-card">
+        <div class="card-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <h2>Campaign Settings</h2>
+        </div>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="batch-size">Batch Size</label>
+            <input id="batch-size" type="number" value="3" min="1" max="10" class="input-sm" />
+            <span class="setting-hint">Messages per batch</span>
+          </div>
+          <div class="setting-item">
+            <label for="min-delay">Min Delay (s)</label>
+            <input id="min-delay" type="number" value="5" min="1" max="60" class="input-sm" />
+            <span class="setting-hint">Between messages</span>
+          </div>
+          <div class="setting-item">
+            <label for="max-delay">Max Delay (s)</label>
+            <input id="max-delay" type="number" value="15" min="5" max="120" class="input-sm" />
+            <span class="setting-hint">Between messages</span>
+          </div>
+          <div class="setting-item">
+            <label for="min-batch-pause">Min Batch Pause (s)</label>
+            <input id="min-batch-pause" type="number" value="30" min="10" max="300" class="input-sm" />
+            <span class="setting-hint">After each batch</span>
+          </div>
+          <div class="setting-item">
+            <label for="max-batch-pause">Max Batch Pause (s)</label>
+            <input id="max-batch-pause" type="number" value="90" min="20" max="600" class="input-sm" />
+            <span class="setting-hint">After each batch</span>
+          </div>
+          <div class="setting-item">
+            <label for="country-code">Country Code</label>
+            <input id="country-code" type="text" value="91" class="input-sm" placeholder="91" />
+            <span class="setting-hint">Default prefix</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Contacts Preview ────────────────────────────────────── -->
+      <section id="contacts-section" class="card contacts-card" style="display:none;">
+        <div class="card-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h2>Contacts Preview</h2>
+          <span id="preview-count" class="badge badge-info">0</span>
+        </div>
+        <div class="table-wrapper">
+          <table id="contacts-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── Campaign Controls + Progress ────────────────────────── -->
+      <section class="card controls-card">
+        <div class="controls-top">
+          <div class="campaign-btns">
+            <button id="btn-start" class="btn btn-primary btn-lg" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Start Campaign
+            </button>
+            <button id="btn-pause" class="btn btn-warning btn-lg" style="display:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              Pause
+            </button>
+            <button id="btn-stop" class="btn btn-danger btn-lg" style="display:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              Stop
+            </button>
+          </div>
+          <div class="stats-row">
+            <div class="stat">
+              <span class="stat-value" id="stat-total">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat sent">
+              <span class="stat-value" id="stat-sent">0</span>
+              <span class="stat-label">Sent</span>
+            </div>
+            <div class="stat failed">
+              <span class="stat-value" id="stat-failed">0</span>
+              <span class="stat-label">Failed</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-remaining">0</span>
+              <span class="stat-label">Remaining</span>
+            </div>
+          </div>
+        </div>
+        <div class="progress-wrapper">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <span id="progress-text" class="progress-text">0%</span>
+        </div>
+      </section>
+
+      <!-- ─── Live Log ────────────────────────────────────────────── -->
+      <section class="card log-card">
+        <div class="card-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <h2>Live Log</h2>
+          <button id="btn-clear-log" class="btn btn-ghost btn-sm">Clear</button>
+        </div>
+        <div id="log-container" class="log-container">
+          <div class="log-entry info">
+            <span class="log-time">--:--:--</span>
+            <span class="log-msg">Waiting for campaign to start...</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
